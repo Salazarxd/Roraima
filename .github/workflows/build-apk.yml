@@ -41,22 +41,23 @@ jobs:
 
 
 
-      - name: Build Android APKs (Debug & Release)
+      - name: Build Android Debug APK
         run: |
           cd android
-          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: List Generated APKs
+      - name: Locate Built APK
         run: |
-          echo "=== SEARCHING ALL BUILT APKS ==="
-          find . -name "*.apk"
+          ls -la android/app/build/outputs/apk/debug/
 
-      - name: Upload APKs to GitHub
+      - name: Upload Debug APK to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: RoraimaExchange-APKs
-          path: '**/*.apk'
+          name: RoraimaExchange-App-Debug-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
           retention-days: 30
+
 
 
 
