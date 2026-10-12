@@ -41,34 +41,22 @@ jobs:
 
 
 
-      - name: Build Debug APK (Listo para instalar en cualquier teléfono)
+      - name: Build Android APKs (Debug & Release)
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle-debug.log
+          ./gradlew assembleDebug assembleRelease --no-daemon --stacktrace
 
-      - name: Build Release APK
-        if: success()
+      - name: List Generated APKs
         run: |
-          cd android
-          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee gradle-release.log
+          echo "=== SEARCHING ALL BUILT APKS ==="
+          find . -name "*.apk"
 
       - name: Upload APKs to GitHub
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: RoraimaExchange-APKs
-          path: |
-            android/app/build/outputs/apk/debug/*.apk
-            android/app/build/outputs/apk/release/*.apk
+          path: '**/*.apk'
           retention-days: 30
 
-      - name: Upload Gradle Build Logs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: gradle-debug-logs
-          path: |
-            android/gradle-debug.log
-            android/gradle-release.log
 
 
