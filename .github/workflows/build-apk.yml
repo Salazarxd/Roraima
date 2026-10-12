@@ -19,12 +19,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+          cache: 'gradle'
 
       - name: Make Gradle Wrapper Executable
         run: chmod +x android/gradlew
+
 
       - name: Build Debug APK (Listo para instalar en cualquier teléfono)
         run: |
