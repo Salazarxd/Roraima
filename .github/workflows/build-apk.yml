@@ -28,12 +28,13 @@ jobs:
       - name: Build Debug APK (Listo para instalar en cualquier teléfono)
         run: |
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Build Release APK
         run: |
           cd android
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease --no-daemon --stacktrace
+
 
       - name: Upload APKs to GitHub
         uses: actions/upload-artifact@v4
