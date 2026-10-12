@@ -35,7 +35,11 @@ curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HEADER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+curl_setopt($ch, CURLOPT_TCP_NODELAY, true);
+curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+curl_setopt($ch, CURLOPT_ENCODING, ''); // Permite compresion nativa rapida
+
 
 // Enviar body si es POST/PUT/PATCH/DELETE
 if ($method !== 'GET' && $method !== 'HEAD') {
@@ -67,9 +71,12 @@ http_response_code($httpCode);
 $headerLines = explode("\r\n", $responseHeaders);
 foreach ($headerLines as $line) {
     if (empty($line)) continue;
-    if (stripos($line, 'Transfer-Encoding:') === 0) continue; // Evitar conflictos de chunked
+    if (stripos($line, 'Transfer-Encoding:') === 0) continue;
+    if (stripos($line, 'Content-Encoding:') === 0) continue;
+    if (stripos($line, 'Content-Length:') === 0) continue;
     if (stripos($line, 'HTTP/') === 0) continue;
     header($line, false);
 }
+
 
 echo $responseBody;
