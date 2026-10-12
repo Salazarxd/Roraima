@@ -1,0 +1,11 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Permitir acceso directo a archivos reales (deploy.php, imagenes, css, js)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # Redirigir el resto de rutas al gateway de Next.js
+    RewriteRule ^(.*)$ index.php [L,QSA]
+</IfModule>

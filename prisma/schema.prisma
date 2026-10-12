@@ -1,0 +1,432 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model p2pchatmessage {
+  id        String   @id @default(uuid())
+  tradeId   String
+  senderId  String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [senderId], references: [id], map: "P2PChatMessage_senderId_fkey")
+  p2ptrade  p2ptrade @relation(fields: [tradeId], references: [id], map: "P2PChatMessage_tradeId_fkey")
+
+  @@index([senderId], map: "P2PChatMessage_senderId_fkey")
+  @@index([tradeId], map: "P2PChatMessage_tradeId_fkey")
+}
+
+model p2porder {
+  id        String     @id @default(uuid())
+  userId    String
+  type      String
+  amount    Float
+  price     Float
+  status    String     @default("OPEN")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  maxAmount Float      @default(0)
+  methods   String     @default("Pago Móvil")
+  minAmount Float      @default(0)
+  requiresVerification Boolean @default(false)
+  autoReply String?    @db.Text
+  user      user       @relation(fields: [userId], references: [id], map: "P2POrder_userId_fkey")
+  p2ptrade  p2ptrade[]
+
+  @@index([userId], map: "P2POrder_userId_fkey")
+}
+
+model p2ptrade {
+  id                           String           @id @default(uuid())
+  orderId                      String
+  buyerId                      String
+  sellerId                     String
+  cryptoAmount                 Float
+  fiatAmount                   Float
+  price                        Float
+  status                       String           @default("PENDING_PAYMENT")
+  createdAt                    DateTime         @default(now())
+  updatedAt                    DateTime         @updatedAt
+  // --- Auditoría y Escrow ---
+  escrowHeld                   Boolean          @default(true)
+  paidAt                       DateTime?
+  cancelledAt                  DateTime?
+  cancelledBy                  String? // userId | "TIMEOUT" | "MEDIATOR"
+  completedAt                  DateTime?
+  disputedAt                   DateTime?
+  disputedBy                   String?
+  disputeReason                String?          @db.Text
+  resolution                   String?
+  resolutionNote               String?          @db.Text
+  resolvedBy                   String?
+  resolvedAt                   DateTime?
+  // --- Origen del escrow y comisiones (modelo Binance P2P) ---
+  escrowSource                 String           @default("WALLET") // "AD" (fondos congelados del anuncio) | "WALLET"
+  escrowAmount                 Float            @default(0)        // Total retenido (incluye comisión si el anunciante vende)
+  makerFee                     Float            @default(0)        // Comisión del anunciante (0.1%)
+  makerId                      String?
+  // Método con el que el comprador declaró haber pagado (define el tiempo de apelación)
+  paymentMethod                String?
+  p2pchatmessage               p2pchatmessage[]
+  userfeedback                 userfeedback[]
+  user_p2ptrade_buyerIdTouser  user             @relation("p2ptrade_buyerIdTouser", fields: [buyerId], references: [id], map: "P2PTrade_buyerId_fkey")
+  p2porder                     p2porder         @relation(fields: [orderId], references: [id], map: "P2PTrade_orderId_fkey")
+  user_p2ptrade_sellerIdTouser user             @relation("p2ptrade_sellerIdTouser", fields: [sellerId], references: [id], map: "P2PTrade_sellerId_fkey")
+
+  @@index([buyerId], map: "P2PTrade_buyerId_fkey")
+  @@index([orderId], map: "P2PTrade_orderId_fkey")
+  @@index([sellerId], map: "P2PTrade_sellerId_fkey")
+  @@index([status])
+}
+
+model supportmessage {
+  id            String        @id @default(uuid())
+  ticketId      String
+  senderId      String
+  content       String        @db.Text
+  isBot         Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  user          user          @relation(fields: [senderId], references: [id], map: "SupportMessage_senderId_fkey")
+  supportticket supportticket @relation(fields: [ticketId], references: [id], map: "SupportMessage_ticketId_fkey")
+
+  @@index([senderId], map: "SupportMessage_senderId_fkey")
+  @@index([ticketId], map: "SupportMessage_ticketId_fkey")
+}
+
+model supportticket {
+  id             String           @id @default(uuid())
+  userId         String
+  subject        String
+  status         String           @default("OPEN")
+  type           String           @default("GENERAL")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  supportmessage supportmessage[]
+  user           user             @relation(fields: [userId], references: [id], map: "SupportTicket_userId_fkey")
+
+  @@index([userId], map: "SupportTicket_userId_fkey")
+}
+
+model user {
+  id                               String              @id @default(uuid())
+  email                            String              @unique(map: "User_email_key")
+  name                             String?
+  document                         String?
+  phone                            String?
+  createdAt                        DateTime            @default(now())
+  updatedAt                        DateTime            @updatedAt
+  address                          String?
+  firstName                        String?
+  kycStatus                        String              @default("UNVERIFIED")
+  // Documento usado en el KYC: CEDULA | PASAPORTE | LICENCIA (todos llevan el mismo número de cédula)
+  documentType                     String?
+  // Solo dígitos de la cédula ("V-23.684.976" -> "23684976"). ÚNICO: una cédula = una cuenta
+  documentNumber                   String?             @unique(map: "User_documentNumber_key") @db.VarChar(20)
+  // Lectura automática (OCR) del documento en el KYC: MATCH | MISMATCH | UNREADABLE
+  kycOcrStatus                     String?             @db.VarChar(20)
+  // Números detectados por el OCR en las fotos (para que el revisor los compare)
+  kycOcrNumbers                    String?             @db.VarChar(255)
+  lastName                         String?
+  role                             String              @default("USER")
+  status                           String              @default("ACTIVE") // ACTIVE | SUSPENDED
+  twoFactorSecret                  String?
+  twoFactorEnabled                 Boolean             @default(false)
+  whitelistEnabled                 Boolean             @default(false)
+  // Membresía VIP (pagada): mientras esté vigente sus anuncios salen primero en el mercado y en Compra rápida
+  vipUntil                         DateTime?
+  // Programa de Referidos
+  referralCode                     String?             @unique
+  referredById                     String?
+  // Tiempo en línea y presencia
+  lastSeenAt                       DateTime            @default(now())
+
+  devices                          userdevice[]
+
+  p2pchatmessage                   p2pchatmessage[]
+  p2porder                         p2porder[]
+  p2ptrade_p2ptrade_buyerIdTouser  p2ptrade[]          @relation("p2ptrade_buyerIdTouser")
+  p2ptrade_p2ptrade_sellerIdTouser p2ptrade[]          @relation("p2ptrade_sellerIdTouser")
+  supportmessage                   supportmessage[]
+  supportticket                    supportticket[]
+  userpaymentmethod                userpaymentmethod[]
+  wallet                           wallet[]
+  wallettx                         wallettx[]
+  deposit                          deposit[]
+  withdrawal                       withdrawal[]
+  kycdocument                      kycdocument[]
+  whitelistaddress                 whitelistaddress[]
+  userdepositaddress               userdepositaddress[]
+  blocks_as_blocker                userblock[]         @relation("blocker")
+  blocks_as_blocked                userblock[]         @relation("blocked")
+  feedback_given                   userfeedback[]      @relation("feedback_given")
+  feedback_received                userfeedback[]      @relation("feedback_received")
+  following_relations              userfollow[]        @relation("following_user")
+  follower_relations               userfollow[]        @relation("follower_user")
+  notifications                    usernotification[]
+  contacts                         usercontact[]
+  price_alerts                     pricealert[]
+  staffaction                      staffaction[]       @relation("staffaction_proposer")
+}
+
+model whitelistaddress {
+  id        String   @id @default(uuid())
+  userId    String
+  label     String   // ej. "Mi Binance"
+  address   String   // La dirección de retiro
+  network   String   @default("TRC20")
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id])
+}
+
+model userblock {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker user @relation("blocker", fields: [blockerId], references: [id])
+  blocked user @relation("blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+}
+
+model userfeedback {
+  id         String   @id @default(uuid())
+  tradeId    String
+  reviewerId String
+  reviewedId String
+  rating     String   // POSITIVE | NEGATIVE
+  comment    String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  trade    p2ptrade @relation(fields: [tradeId], references: [id])
+  reviewer user     @relation("feedback_given", fields: [reviewerId], references: [id])
+  reviewed user     @relation("feedback_received", fields: [reviewedId], references: [id])
+
+  @@unique([tradeId, reviewerId])
+  @@index([reviewedId])
+}
+
+/// Decisiones propuestas por el rol SUPPORT. Ninguna se ejecuta hasta que un ADMIN la aprueba.
+model staffaction {
+  id         String    @id @default(uuid())
+  kind       String // DISPUTE | KYC
+  targetId   String // tradeId (DISPUTE) | userId (KYC)
+  decision   String // RELEASE_TO_BUYER | REFUND_TO_SELLER | VERIFIED | REJECTED
+  note       String    @db.Text
+  status     String    @default("PENDING") // PENDING | APPROVED | REJECTED | SUPERSEDED
+  proposedBy String
+  reviewedBy String?
+  reviewNote String?   @db.Text
+  createdAt  DateTime  @default(now())
+  reviewedAt DateTime?
+  proposer   user      @relation("staffaction_proposer", fields: [proposedBy], references: [id])
+
+  @@index([status])
+  @@index([targetId])
+  @@index([proposedBy])
+}
+
+/// Libro mayor: cada movimiento de saldo deja un registro inmutable.
+model wallettx {
+  id        String   @id @default(uuid())
+  userId    String
+  currency  String   @default("USDT")
+  type      String
+  amount    Float // Con signo: positivo = entrada, negativo = salida
+  refId     String?
+  note      String?  @db.Text
+  hash      String?  @unique @db.VarChar(64)
+  prevHash  String?  @db.VarChar(64)
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([refId])
+}
+
+model platformfee {
+  id        String   @id @default(uuid())
+  tradeId   String
+  userId    String
+  amount    Float
+  type      String   @default("MAKER_FEE")
+  createdAt DateTime @default(now())
+
+  @@index([tradeId])
+  @@index([createdAt])
+}
+
+model deposit {
+  id              String    @id @default(uuid())
+  userId          String
+  network         String    @default("TRC20")
+  requestedAmount Float
+  expectedAmount  Float
+  status          String    @default("PENDING") // PENDING | CREDITED | EXPIRED
+  txid            String?   @unique
+  fromAddress     String?
+  createdAt       DateTime  @default(now())
+  expiresAt       DateTime
+  creditedAt      DateTime?
+  user            user      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model withdrawal {
+  id          String    @id @default(uuid())
+  userId      String
+  amount      Float
+  fee         Float
+  netAmount   Float
+  address     String
+  network     String    @default("TRC20")
+  status      String    @default("PENDING") // PENDING | COMPLETED | REJECTED | CANCELLED
+  txid        String?   @unique
+  note        String?   @db.Text
+  processedBy String?
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+  user        user      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+}
+
+model kycdocument {
+  id        String   @id @default(uuid())
+  userId    String
+  kind      String // FRONT | BACK | SELFIE
+  path      String
+  mime      String
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model userpaymentmethod {
+  id        String   @id @default(uuid())
+  userId    String
+  type      String
+  details   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      user     @relation(fields: [userId], references: [id], map: "UserPaymentMethod_userId_fkey")
+
+  @@index([userId], map: "UserPaymentMethod_userId_fkey")
+}
+
+model wallet {
+  id        String   @id @default(uuid())
+  userId    String
+  currency  String   @default("USDT")
+  balance   Float    @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      user     @relation(fields: [userId], references: [id], map: "Wallet_userId_fkey")
+
+  @@index([userId], map: "Wallet_userId_fkey")
+}
+
+model systemsetting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model userdepositaddress {
+  id              String   @id @default(uuid())
+  userId          String
+  network         String   @default("TRC20")
+  currency        String   @default("USDT")
+  address         String   @unique
+  derivationIndex Int      @unique
+  createdAt       DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id])
+
+  @@unique([userId, network])
+  @@index([address])
+}
+
+model userfollow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  notifyOnAd  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  follower  user @relation("following_user", fields: [followerId], references: [id], onDelete: Cascade)
+  following user @relation("follower_user", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model usernotification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  body      String   @db.Text
+  kind      String   @default("P2P_AD") // P2P_AD | SYSTEM | TRADE
+  href      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model usercontact {
+  id        String   @id @default(uuid())
+  userId    String
+  alias     String
+  email     String
+  createdAt DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model pricealert {
+  id          String    @id @default(uuid())
+  userId      String
+  targetPrice Float
+  direction   String    @default("ABOVE") // ABOVE | BELOW
+  active      Boolean   @default(true)
+  triggeredAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
+
+model userdevice {
+  id           String   @id @default(uuid())
+  userId       String
+  deviceName   String
+  browser      String
+  os           String
+  ip           String?
+  isTrusted    Boolean  @default(true)
+  lastActiveAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  user user @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+

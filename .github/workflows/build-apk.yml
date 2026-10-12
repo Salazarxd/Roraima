@@ -1,0 +1,47 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Release and Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle Wrapper Executable
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK (Listo para instalar en cualquier teléfono)
+        run: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Build Release APK
+        run: |
+          cd android
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APKs to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: RoraimaExchange-APKs
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/apk/release/*.apk
+          retention-days: 30
+

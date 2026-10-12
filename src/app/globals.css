@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-emerald-400: #34d399;
+  --color-emerald-600: #059669;
+  --color-zinc-50: #fafafa;
+  --color-zinc-900: #18181b;
+  --color-zinc-950: #09090b;
+}
+
+/* Scroll suave para los enlaces de secciones de la portada */
+@media (prefers-reduced-motion: no-preference) {
+  html { scroll-behavior: smooth; }
+}
+
+/* Móvil: nada debe provocar scroll horizontal (clip no rompe position: sticky) */
+html, body { overflow-x: clip; }
+
+/* Menús deslizables horizontalmente sin barra visible */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Propulsores de Rori (mascota) */
+@keyframes jet {
+  from { transform: scaleY(0.7); opacity: 0.6; }
+  to { transform: scaleY(1.25) translateY(3px); opacity: 1; }
+}
+
+/* Marca Roraima: colores del emblema (bandera de Venezuela) */
+@theme {
+  --color-brand-gold: #f5b82e;
+  --color-brand-blue: #2f6bff;
+  --color-brand-red: #e8335a;
+  --color-brand-cyan: #22d3ee;
+
+  --animate-aurora: aurora 18s ease-in-out infinite alternate;
+  --animate-marquee: marquee 40s linear infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-shine: shine 3.5s ease-in-out infinite;
+  --animate-orbit: orbit 24s linear infinite;
+  --animate-orbit-reverse: orbit 36s linear infinite reverse;
+
+  @keyframes aurora {
+    0% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
+    50% { transform: translate3d(4%, -6%, 0) scale(1.15) rotate(8deg); }
+    100% { transform: translate3d(-5%, 4%, 0) scale(0.95) rotate(-6deg); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes shine {
+    0% { background-position: 200% 0; }
+    60%, 100% { background-position: -200% 0; }
+  }
+  @keyframes orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
+/* Texto con degradado de la marca */
+.text-brand-gradient {
+  background: linear-gradient(100deg, var(--color-brand-gold) 0%, #ff8a3d 30%, var(--color-brand-red) 55%, #8b5cf6 75%, var(--color-brand-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Cuadrícula sutil de fondo (se desvanece hacia los bordes) */
+.bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(113 113 122 / 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(113 113 122 / 0.12) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%);
+}
+
+/* Borde con degradado animado para tarjetas destacadas */
+.border-shine {
+  position: relative;
+  isolation: isolate;
+}
+.border-shine::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(110deg, transparent 20%, var(--color-brand-gold) 40%, var(--color-brand-red) 50%, var(--color-brand-blue) 60%, transparent 80%);
+  background-size: 300% 100%;
+  animation: shine 5s linear infinite;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-aurora, .animate-marquee, .animate-float, .animate-orbit, .animate-orbit-reverse, .border-shine::before {
+    animation: none !important;
+  }
+}
+
+:root {
+  --background: #fafafa;
+  --foreground: #09090b;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
+}
+
+/* Safe areas for Notch / Dynamic Island */
+@supports (padding-top: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-tap-highlight-color: transparent;
+}
