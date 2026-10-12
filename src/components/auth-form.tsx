@@ -137,8 +137,14 @@ export function AuthForm() {
 
       router.push(nextRef.current);
     } catch (err: any) {
-      console.error(err);
-      setError("Error al iniciar sesión con Google");
+      console.error("Error Google Auth:", err);
+      if (err?.code === "auth/unauthorized-domain") {
+        setError("Dominio no autorizado: Debes agregar 'roraimacripto.vefixy.net' en Firebase Console > Authentication > Settings > Authorized domains.");
+      } else if (err?.code === "auth/popup-closed-by-user") {
+        setError("Inicio de sesión con Google cancelado.");
+      } else {
+        setError(err?.message || "Error al iniciar sesión con Google");
+      }
     } finally {
       setLoading(false);
     }
@@ -198,7 +204,7 @@ export function AuthForm() {
         {/* Tabs Header */}
         <div className="relative flex p-1 mb-8 bg-zinc-100 dark:bg-zinc-950 rounded-2xl">
           <button
-            onClick={() => setActiveTab("login")}
+            onClick={() => { setActiveTab("login"); setError(""); }}
             className={`relative flex-1 py-3 text-sm font-semibold rounded-xl transition-colors z-10 ${
               activeTab === "login" ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
@@ -206,13 +212,14 @@ export function AuthForm() {
             Iniciar Sesión
           </button>
           <button
-            onClick={() => setActiveTab("register")}
+            onClick={() => { setActiveTab("register"); setError(""); }}
             className={`relative flex-1 py-3 text-sm font-semibold rounded-xl transition-colors z-10 ${
               activeTab === "register" ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             }`}
           >
             Crear Cuenta
           </button>
+
           
           {/* Animated Tab Indicator */}
           <motion.div
@@ -273,6 +280,12 @@ export function AuthForm() {
                         ¿Olvidaste tu contraseña?
                       </button>
                     </div>
+
+                    {error && (
+                      <p className="text-sm font-semibold text-rose-500 bg-rose-50 dark:bg-rose-950/30 p-3 rounded-xl border border-rose-100 dark:border-rose-900/50">
+                        {error}
+                      </p>
+                    )}
 
                     <button disabled={loading} type="submit" className="w-full mt-4 disabled:opacity-50 py-4 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-400 dark:hover:bg-emerald-500 text-white dark:text-zinc-950 font-bold rounded-2xl shadow-lg shadow-emerald-600/20 dark:shadow-emerald-400/20 transition-all hover:scale-[1.02] active:scale-[0.98]">
                       {loading ? "Cargando..." : "Continuar"}
