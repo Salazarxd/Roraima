@@ -38,6 +38,23 @@ async function main() {
     return;
   }
 
+  if (cmd === 'restart') {
+    console.log('🔄 Reiniciando servidor Next.js en el host remoto...');
+    const res = await request('restart_next');
+    console.log(res.output || res.error);
+    return;
+  }
+
+  if (cmd === 'sh') {
+    const shCmd = arg || 'ps aux | grep node';
+    console.log(`-> Ejecutando sh: ${shCmd}`);
+    const form = new FormData();
+    form.append('cmd', shCmd);
+    const res = await request('sh', {}, { method: 'POST', body: form });
+    console.log(res.output || res.error);
+    return;
+  }
+
   if (cmd === 'logs') {
     const res = await request('logs');
     console.log(res.output);
@@ -90,9 +107,13 @@ async function main() {
     const res = await request('upload', { extract: '1' }, { method: 'POST', body: form });
     console.log(res.output || res.error);
 
-    console.log('-> [3/3] Aplicando permisos...');
+    console.log('-> [3/4] Aplicando permisos...');
     const perms = await request('perms');
     console.log(perms.output);
+
+    console.log('-> [4/4] Solicitando reinicio del servidor Next.js...');
+    const restart = await request('restart_next');
+    console.log(restart.output);
 
     console.log('\n🎉 ¡DESPLIEGUE REMOTO COMPLETADO CON ÉXITO!');
     return;
