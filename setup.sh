@@ -49,9 +49,10 @@ if [ "$IS_ALIVE" != "200" ] && [ "$IS_ALIVE" != "307" ] && [ "$IS_ALIVE" != "308
     pkill -9 -f "node" 2>/dev/null || true
     sleep 2
     cd "$APP_DIR"
-    echo "-> Arrancando Next.js con npm start..."
-    nohup "$NODE_DIR/bin/npm" start > "$APP_DIR/app.log" 2>&1 &
-    sleep 4
+    chmod -R 755 "$APP_DIR/node_modules/.bin" 2>/dev/null || true
+    echo "-> Arrancando Next.js directamente con node..."
+    nohup "$NODE_DIR/bin/node" "$APP_DIR/node_modules/next/dist/bin/next" start > "$APP_DIR/app.log" 2>&1 &
+    sleep 5
     NEW_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ 2>/dev/null || echo "000")
     echo "-> Servidor Next.js iniciado con respuesta HTTP: $NEW_CODE"
 else
