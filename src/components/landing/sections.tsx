@@ -39,8 +39,8 @@ export function RatesTicker() {
     { label: "Roraima · Venta", value: data?.market.bestSell, accent: "text-rose-500" },
     { label: "Binance P2P", value: data?.rates.binance, accent: "text-brand-gold" },
     { label: "Dólar BCV", value: data?.rates.bcv, accent: "text-brand-blue" },
-    { label: "Paralelo", value: data?.rates.parallel, accent: "text-violet-500" },
   ].filter((i): i is { label: string; value: number; accent: string } => i.value != null);
+
 
   if (!data) {
     return <div className="h-14 border-y border-zinc-200/70 dark:border-white/10 bg-white/50 dark:bg-white/[0.02] animate-pulse" />;

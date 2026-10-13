@@ -86,7 +86,6 @@ export async function getReferenceRates(): Promise<RatesResult> {
 export async function getLiveExchangeRate(): Promise<{ success: boolean; rate: number | null; source: string | null }> {
   const r = await getReferenceRates();
   if (r.roraima) return { success: true, rate: r.roraima, source: "Roraima P2P" };
-  if (r.binance) return { success: true, rate: r.binance, source: "Binance P2P" };
-  if (r.parallel) return { success: true, rate: r.parallel, source: "Paralelo" };
+  if (r.bcv) return { success: true, rate: r.bcv, source: "Dólar BCV" };
   return { success: false, rate: null, source: null };
 }

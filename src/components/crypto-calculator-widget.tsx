@@ -24,7 +24,7 @@ export function CryptoCalculatorWidget({
   showLinkToP2P = true,
 }: CryptoCalculatorProps) {
   const [rates, setRates] = useState<RatesData | null>(initialRates || null);
-  const [rateSource, setRateSource] = useState<"roraima" | "bcv" | "parallel">("roraima");
+  const [rateSource, setRateSource] = useState<"roraima" | "bcv">("roraima");
   const [usdtAmount, setUsdtAmount] = useState<string>("25");
   const [vesAmount, setVesAmount] = useState<string>("");
   const [activeInput, setActiveInput] = useState<"USDT" | "VES">("USDT");
@@ -45,12 +45,9 @@ export function CryptoCalculatorWidget({
   const activeRate = useMemo(() => {
     if (!rates) return 0;
     if (rateSource === "roraima") {
-      return rates.roraima || rates.binance || rates.parallel || rates.bcv || 0;
+      return rates.roraima || rates.binance || rates.bcv || 0;
     }
-    if (rateSource === "bcv") {
-      return rates.bcv || rates.parallel || rates.roraima || 0;
-    }
-    return rates.parallel || rates.roraima || rates.bcv || 0;
+    return rates.bcv || rates.roraima || 0;
   }, [rates, rateSource]);
 
   // Recalcular montos bidireccionalmente
@@ -127,8 +124,8 @@ export function CryptoCalculatorWidget({
         )}
       </div>
 
-      {/* Selector de Tasas (P2P Roraima / BCV / Paralelo) */}
-      <div className="grid grid-cols-3 gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-950/60 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 text-[11px] font-bold">
+      {/* Selector de Tasas (P2P Roraima / Dólar BCV) */}
+      <div className="grid grid-cols-2 gap-1.5 p-1 bg-zinc-100 dark:bg-zinc-950/60 rounded-2xl border border-zinc-200/60 dark:border-zinc-800/80 text-[11px] font-bold">
         <button
           type="button"
           onClick={() => {
@@ -164,25 +161,8 @@ export function CryptoCalculatorWidget({
             {rates?.bcv?.toFixed(2) ?? "—"} Bs
           </span>
         </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            hapticTap();
-            setRateSource("parallel");
-          }}
-          className={`py-2 px-2 rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 ${
-            rateSource === "parallel"
-              ? "bg-white dark:bg-zinc-800 text-purple-600 dark:text-purple-400 shadow-sm font-extrabold"
-              : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200"
-          }`}
-        >
-          <span>Paralelo</span>
-          <span className="font-mono text-[10px] opacity-80">
-            {rates?.parallel?.toFixed(2) ?? "—"} Bs
-          </span>
-        </button>
       </div>
+
 
       {/* Inputs de Conversión */}
       <div className="space-y-3">
