@@ -36,8 +36,9 @@ if [ -f "$APP_DIR/.restart_pending" ]; then
     pkill -9 -f "node" 2>/dev/null || true
     pkill -9 -f "next" 2>/dev/null || true
     rm -f "$APP_DIR/.restart_pending"
+    rm -rf "$APP_DIR/.next/server/route-cache" "$APP_DIR/.next/cache" 2>/dev/null || true
     sleep 3
-    echo "-> Puerto 3000 liberado."
+    echo "-> Puerto 3000 liberado y route-cache eliminada."
 fi
 
 # 3. Comprobar si el puerto 3000 responde
