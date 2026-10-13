@@ -12,7 +12,7 @@ import type { Worker } from "tesseract.js";
  */
 
 const g = globalThis as unknown as { __roraimaOcrWorker?: Promise<Worker> };
-const OCR_TIMEOUT_MS = 30_000;
+const OCR_TIMEOUT_MS = 10_000;
 
 function getWorker(): Promise<Worker> {
   if (!g.__roraimaOcrWorker) {
